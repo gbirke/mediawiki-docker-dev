@@ -84,12 +84,43 @@ services:
       - "${DOCKER_MW_PORT}:80"
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
+    networks:
+        default:
+        selenium:
+            aliases:
+                - "default.web.mw.localhost"
 
   elasticsearch:
       image: docker.elastic.co/elasticsearch/elasticsearch:5.5.0
       environment:
           - http.host=0.0.0.0
           - transport.host=127.0.0.1
+
+  seleniumtests:
+      image: "node:6"
+      environment:
+        - "MW_SERVER=http://default.web.mw.localhost:80"
+        - "MW_SCRIPT_PATH=/mediawiki"
+      command: node_modules/.bin/wdio tests/selenium/wdio.conf.js --host selenium
+      working_dir: /app
+      volumes:
+        - /Users/gabi/src/mediawiki:/app
+      links:
+        - selenium
+      networks:
+          - selenium
+
+  selenium:
+      image: selenium/standalone-firefox
+      expose:
+          - "4444"
+      links:
+          - "nginx-proxy"
+      networks:
+          - selenium
+
+networks:
+    selenium:
 
 volumes:
   sql-data-master:
